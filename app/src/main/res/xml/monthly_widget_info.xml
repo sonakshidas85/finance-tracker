@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- See weekly_widget_info.xml for a full explanation of the size attributes chosen here -
+     the Monthly widget uses identical size buckets since it shares the same
+     SizeMode.Responsive(SMALL, MEDIUM) declaration in MonthlyBudgetWidget.kt. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="100dp"
+    android:minHeight="60dp"
+    android:minResizeWidth="100dp"
+    android:minResizeHeight="60dp"
+    android:maxResizeWidth="220dp"
+    android:maxResizeHeight="120dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:previewLayout="@android:layout/simple_list_item_1"
+    android:description="@string/monthly_widget_description"
+    android:updatePeriodMillis="0" />
