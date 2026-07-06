@@ -1,18 +1,21 @@
 package com.budgettracker.app.data
 
 import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import java.security.KeyStore
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
@@ -33,37 +36,46 @@ private val Context.dataStore by preferencesDataStore(name = "budget_tracker_pre
  * Preferences DataStore exactly as-is and manually encrypt/decrypt the JSON *string* with a
  * javax.crypto.Cipher backed by an AES-256-GCM secret key that lives in the Android Keystore
  * (never in app memory/disk in plaintext, never extractable even with root on most devices/API
- * levels). [MasterKey] is used only to provision that Keystore key via the same
- * `MasterKey.KeyScheme.AES256_GCM` scheme Jetpack Security's own EncryptedFile/
- * EncryptedSharedPreferences use internally - we then reach into the KeyStore-backed key it
- * created and drive AES/GCM/NoPadding ourselves so the ciphertext can be stored as a single
- * Base64 string, matching the existing "one JSON blob" shape with minimal disruption.
+ * levels). The key is generated/retrieved directly via the platform `KeyGenerator` +
+ * `KeyGenParameterSpec` APIs (the same mechanism Jetpack Security's own EncryptedFile/
+ * EncryptedSharedPreferences use under the hood) under a fixed alias owned by this app, so the
+ * ciphertext can be stored as a single Base64 string, matching the existing "one JSON blob" shape
+ * with minimal disruption. (An earlier version of this went through `androidx.security.crypto
+ * .MasterKey` to provision the same kind of key, but reflecting into its `keyAlias` to hand the
+ * key back to a manually-driven Cipher isn't supported public API on the version pinned in this
+ * project - generating the Keystore key ourselves sidesteps that entirely.)
  */
 private object BudgetCrypto {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val KEY_ALIAS = "budget_tracker_master_key"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val GCM_TAG_LENGTH_BITS = 128
     private const val IV_LENGTH_BYTES = 12
 
-    /**
-     * Provisioning [MasterKey] with AES256_GCM ensures a Keystore-resident key with this alias
-     * exists (creating it on first call); we then look the same key up directly from the
-     * AndroidKeyStore provider so we can drive the Cipher ourselves. The [javax.crypto.SecretKey]
-     * handle returned by the Keystore is non-exportable by design (`getEncoded()` returns null) -
-     * that's fine, Cipher.init() accepts the handle directly without ever needing raw key bytes.
-     */
-    private fun cipherFor(context: Context): Pair<Cipher, javax.crypto.SecretKey> {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
+    /** Returns the app's Keystore-resident AES-256-GCM key, generating it on first call. */
+    private fun getOrCreateSecretKey(): SecretKey {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        val entry = keyStore.getEntry(masterKey.keyAlias, null) as KeyStore.SecretKeyEntry
-        return Cipher.getInstance(TRANSFORMATION) to entry.secretKey
+        (keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }
+
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        val spec = KeyGenParameterSpec.Builder(
+            KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .build()
+        keyGenerator.init(spec)
+        return keyGenerator.generateKey()
     }
+
+    private fun cipherFor(): Pair<Cipher, SecretKey> =
+        Cipher.getInstance(TRANSFORMATION) to getOrCreateSecretKey()
 
     /** Encrypts [plainText] and returns a single Base64 string of IV + ciphertext, safe to store as one DataStore string value. */
     fun encrypt(context: Context, plainText: String): String {
-        val (cipher, secretKey) = cipherFor(context)
+        val (cipher, secretKey) = cipherFor()
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         val iv = cipher.iv
         val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
@@ -73,7 +85,7 @@ private object BudgetCrypto {
 
     /** Inverse of [encrypt]. Returns null (never throws) if [encoded] is malformed/undecryptable - caller falls back to seed defaults. */
     fun decrypt(context: Context, encoded: String): String? = runCatching {
-        val (cipher, secretKey) = cipherFor(context)
+        val (cipher, secretKey) = cipherFor()
         val combined = Base64.decode(encoded, Base64.NO_WRAP)
         val iv = combined.copyOfRange(0, IV_LENGTH_BYTES)
         val cipherText = combined.copyOfRange(IV_LENGTH_BYTES, combined.size)

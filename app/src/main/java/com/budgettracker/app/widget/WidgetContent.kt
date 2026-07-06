@@ -1,14 +1,14 @@
 package com.budgettracker.app.widget
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.cornerRadius
@@ -22,6 +22,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.text.FontFamily
+import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
@@ -104,18 +105,19 @@ fun glanceColorsFor(context: Context): GlanceBudgetColors = if (isNightMode(cont
 }
 
 /**
- * Tap action for both widgets: an explicit Intent launching MainActivity with the
- * EXTRA_SELECTED_PERIOD extra so MainActivity/ViewModel can pre-select the matching tab.
+ * Tap action for both widgets: launches MainActivity with the EXTRA_SELECTED_PERIOD extra so
+ * MainActivity/ViewModel can pre-select the matching tab. Uses the reified
+ * `actionStartActivity<T>(parameters)` overload (rather than building a raw Intent) since Glance
+ * passes ActionParameters through as Intent extras keyed by the parameter's name - MainActivity's
+ * existing `intent.getStringExtra(EXTRA_SELECTED_PERIOD)` read picks it up unchanged, and this
+ * sidesteps an Intent-vs-ComponentName overload mismatch on the Glance version this project pins.
  */
-fun widgetTapIntentAction(period: BudgetPeriod) = actionStartActivity(
-    Intent(Intent.ACTION_MAIN).apply {
-        setClassName("com.budgettracker.app", "com.budgettracker.app.MainActivity")
-        putExtra(
-            TARGET_ACTIVITY_PERIOD_KEY,
-            if (period == BudgetPeriod.WEEKLY) MainActivity.PERIOD_WEEKLY else MainActivity.PERIOD_MONTHLY
-        )
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
+private val selectedPeriodParam = ActionParameters.Key<String>(TARGET_ACTIVITY_PERIOD_KEY)
+
+fun widgetTapIntentAction(period: BudgetPeriod) = actionStartActivity<MainActivity>(
+    parameters = actionParametersOf(
+        selectedPeriodParam to if (period == BudgetPeriod.WEEKLY) MainActivity.PERIOD_WEEKLY else MainActivity.PERIOD_MONTHLY
+    )
 )
 
 /** Formats the small-layout period label: "This week" / "July 2026". */

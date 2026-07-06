@@ -64,6 +64,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    // Provides ProcessLifecycleOwner, used by BudgetApplication for its always-alive
+    // process-scoped coroutine scope (the DataStore-Flow -> widget-update observers).
+    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
 
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -81,8 +84,9 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    // Security - Keystore-backed encryption for the DataStore JSON blob at rest.
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // (Encryption at rest for the DataStore JSON blob uses the platform KeyGenerator /
+    // AndroidKeyStore APIs directly - see BudgetRepository.kt - so no extra library is needed
+    // here.)
 
     // Optional biometric/device-credential app-lock.
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
