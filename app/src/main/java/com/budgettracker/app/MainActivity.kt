@@ -28,6 +28,7 @@ import androidx.fragment.app.FragmentActivity
 import com.budgettracker.app.data.BudgetPeriod
 import com.budgettracker.app.data.BudgetRepository
 import com.budgettracker.app.ui.MainViewModel
+import com.budgettracker.app.ui.components.MascotMessage
 import com.budgettracker.app.ui.screens.HomeScreen
 import com.budgettracker.app.ui.screens.SettingsScreen
 import com.budgettracker.app.ui.showBiometricGate
@@ -145,13 +146,11 @@ private fun LockGateScreen(onRetry: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Unlock required", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Budget Tracker is locked. Authenticate to view your data.",
-            style = MaterialTheme.typography.bodyMedium
+        MascotMessage(
+            headline = "Bean's guarding your wallet",
+            body = "Prove it's you before we talk numbers."
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Button(onClick = onRetry) {
             Text("Retry")
         }

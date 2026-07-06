@@ -10,9 +10,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary = AccentEmerald,
+    primary = Grass,
     onPrimary = Color.White,
-    secondary = HeaderEmphasis,
+    secondary = GrassDeep,
+    tertiary = Coin,
+    onTertiary = Ink,
     background = BackgroundLight,
     onBackground = TextPrimaryLight,
     surface = SurfaceLight,
@@ -29,7 +31,9 @@ private val LightColors = lightColorScheme(
 private val DarkColors = darkColorScheme(
     primary = AccentEmeraldDark,
     onPrimary = Color.Black,
-    secondary = HeaderEmphasisDark,
+    secondary = AccentEmeraldDark,
+    tertiary = Coin,
+    onTertiary = Ink,
     background = BackgroundDark,
     onBackground = TextPrimaryDark,
     surface = SurfaceDark,

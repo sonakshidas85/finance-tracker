@@ -1,13 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Minimal vector foreground: a rounded rupee-ish glyph in emerald, centered, sized to sit
-     safely within the adaptive-icon mask. Deliberately simple - not a design asset deliverable,
-     just enough for the app to have a valid, buildable launcher icon. -->
+<!-- App icon foreground: "Bean", the official gremlin mascot, ported exactly from the brand
+     guidelines' own SVG path/circle data (viewBox 0 0 200 214) via a single affine transform
+     (scale 0.34, centered) so every curve matches the source 1:1 - this is a precise vector port,
+     not a hand-drawn approximation. Colors are the literal brand hexes and are never altered:
+     grass #33C04A body, ink #123322 linework/pupils/mouth, coin #FFC83A cheek dots at their exact
+     opacity, white eyes with ink stroke. Per the guidelines' "Primary icon" spec, Bean sits at
+     roughly two-thirds scale within the tile, matched here to the adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Antenna stem -->
     <path
-        android:fillColor="#1F7A5C"
-        android:pathData="M39,30 H70 V40 H58.5 C63,43 65,47 65,52 H70 V62 H64.5 C62,72 53,79 41,80 L41,80 L64,98 H48 L27,80 V70 H41 C48,70 52.5,66.5 54,62 H39 V52 H54 C52.5,45.5 47.5,42 40,40 H39 Z" />
+        android:strokeColor="#123322"
+        android:strokeWidth="0.884"
+        android:strokeLineCap="round"
+        android:pathData="M 54,35.3
+            C 54,31.22 49.24,31.22 50.6,26.46
+            C 52.98,28.16 57.4,28.5 55.36,33.94" />
+    <!-- Antenna tip -->
+    <path
+        android:fillColor="#33C04A"
+        android:pathData="M 48.9,25.78 a 1.7,1.7 0 1,0 3.4,0 a 1.7,1.7 0 1,0 -3.4,0 Z" />
+    <!-- Body -->
+    <path
+        android:fillColor="#33C04A"
+        android:pathData="M 42.44,42.1
+            C 42.44,35.3 65.56,35.3 65.56,42.78
+            C 66.92,58.42 66.92,69.3 64.88,78.14
+            C 58.08,84.26 49.92,84.26 43.12,78.14
+            C 41.08,69.3 41.08,58.42 42.44,42.1
+            Z" />
+    <!-- Cheek dots (coin, 60% opacity) -->
+    <path
+        android:fillColor="#FFC83A"
+        android:fillAlpha="0.6"
+        android:pathData="M 38.02,68.62 a 2.38,2.38 0 1,0 4.76,0 a 2.38,2.38 0 1,0 -4.76,0 Z" />
+    <path
+        android:fillColor="#FFC83A"
+        android:fillAlpha="0.6"
+        android:pathData="M 65.22,68.62 a 2.38,2.38 0 1,0 4.76,0 a 2.38,2.38 0 1,0 -4.76,0 Z" />
+    <!-- Eyes (white, ink stroke) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#123322"
+        android:strokeWidth="1.02"
+        android:pathData="M 42.44,54.34 a 6.8,6.8 0 1,0 13.6,0 a 6.8,6.8 0 1,0 -13.6,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#123322"
+        android:strokeWidth="1.02"
+        android:pathData="M 51.96,54.34 a 6.8,6.8 0 1,0 13.6,0 a 6.8,6.8 0 1,0 -13.6,0 Z" />
+    <!-- Pupils -->
+    <path
+        android:fillColor="#123322"
+        android:pathData="M 46.52,55.02 a 3.4,3.4 0 1,0 6.8,0 a 3.4,3.4 0 1,0 -6.8,0 Z" />
+    <path
+        android:fillColor="#123322"
+        android:pathData="M 54.68,55.02 a 3.4,3.4 0 1,0 6.8,0 a 3.4,3.4 0 1,0 -6.8,0 Z" />
+    <!-- Eye highlights -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 47.47,53.66 a 1.088,1.088 0 1,0 2.18,0 a 1.088,1.088 0 1,0 -2.18,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 55.63,53.66 a 1.088,1.088 0 1,0 2.18,0 a 1.088,1.088 0 1,0 -2.18,0 Z" />
+    <!-- Mouth -->
+    <path
+        android:fillColor="#123322"
+        android:pathData="M 51.96,67.26 a 2.04,2.72 0 1,0 4.08,0 a 2.04,2.72 0 1,0 -4.08,0 Z" />
 </vector>

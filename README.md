@@ -1,4 +1,4 @@
-# Budget Tracker (with Jetpack Glance home-screen widgets)
+# gremlin (with Jetpack Glance home-screen widgets)
 
 A local-only, native Android budget tracker with two independently-driven periods: Weekly is a
 direct, manually-entered spending allotment, while Monthly still works off your monthly salary and
@@ -69,7 +69,7 @@ setup. Two ways to get an APK onto your phone, easiest first:
    file-manager/browser/mail-app you used to open the APK). You can also pre-enable it at
    **Settings -> Apps -> Special access -> Install unknown apps** -> pick the app you'll use to
    open the file -> toggle **Allow from this source**.
-8. Tap the APK again to install, then open Budget Tracker like any other app.
+8. Tap the APK again to install, then open gremlin like any other app.
 
 **(b) Android Studio, if you have it installed locally:**
 1. Open the project (`File > Open...` -> select `BudgetTrackerWidget/`), let Gradle sync finish.
@@ -86,8 +86,8 @@ signed with your own proper signing key instead of the auto-generated debug key.
 1. Install and open the app at least once (this seeds default data into DataStore so the widget
    never shows a blank/empty first-run state).
 2. Long-press an empty area of the home screen -> **Widgets**.
-3. Find **Budget Tracker** in the widget picker - you'll see two entries, **Budget Tracker:
-   Weekly** and **Budget Tracker: Monthly** (their labels come from
+3. Find **gremlin** in the widget picker - you'll see two entries, **gremlin:
+   Weekly** and **gremlin: Monthly** (their labels come from
    `res/values/strings.xml` / `AndroidManifest.xml` receiver labels).
 4. Drag either one onto the home screen. It initially places at its small (~2x1 cell) size.
 5. Long-press the placed widget and drag its resize handles to grow it - once it crosses the

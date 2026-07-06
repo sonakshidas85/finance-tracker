@@ -32,7 +32,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +50,7 @@ import com.budgettracker.app.data.CurrencyFormat
 import com.budgettracker.app.data.PeriodBudget
 import com.budgettracker.app.data.PeriodStamps
 import com.budgettracker.app.ui.components.CategoryRow
+import com.budgettracker.app.ui.components.MascotMessage
 import com.budgettracker.app.ui.components.StatCard
 import com.budgettracker.app.ui.theme.BudgetTheme
 import com.budgettracker.app.ui.theme.MonospaceNumberStyle
@@ -89,7 +94,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Budget Tracker") },
+                title = { Text("gremlin") },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
@@ -185,16 +190,25 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            items(periodBudget.categories, key = { it.id }) { category ->
-                CategoryRow(
-                    category = category,
-                    periodPool = periodPool,
-                    onNameChange = { onCategoryNameChange(category, it) },
-                    onPercentChange = { onCategoryPercentChange(category, it) },
-                    onSpentChange = { onCategorySpentChange(category, it) },
-                    onDelete = { onDeleteCategory(category) },
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
+            if (periodBudget.categories.isEmpty()) {
+                item {
+                    MascotMessage(
+                        headline = "Bean's waiting on you",
+                        body = "Add a category below to start splitting up your ${if (selectedPeriod == BudgetPeriod.WEEKLY) "weekly allotment" else "monthly pool"}."
+                    )
+                }
+            } else {
+                items(periodBudget.categories, key = { it.id }) { category ->
+                    CategoryRow(
+                        category = category,
+                        periodPool = periodPool,
+                        onNameChange = { onCategoryNameChange(category, it) },
+                        onPercentChange = { onCategoryPercentChange(category, it) },
+                        onSpentChange = { onCategorySpentChange(category, it) },
+                        onDelete = { onDeleteCategory(category) },
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
+                }
             }
 
             item {
@@ -215,6 +229,43 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Holds a locally-editable text mirror of an externally-driven Double, staying in sync with
+ * external changes (e.g. "Clear all data") WITHOUT clobbering what the user is actively typing
+ * after every DataStore round trip. It tracks the last value *this field itself* pushed upstream;
+ * when the external value changes to something other than that, it's a real external change (or
+ * first composition) and the text re-syncs - when it matches, it's just our own write echoing
+ * back, so the text is left alone. See CategoryRow.kt's class doc for the fuller lag explanation;
+ * this is the same fix, just for fields with no natural "identity key" (like a category id) to
+ * reset on.
+ */
+@Composable
+private fun rememberEchoAwareText(externalValue: Double, format: (Double) -> String): Pair<androidx.compose.runtime.MutableState<String>, androidx.compose.runtime.MutableState<Double>> {
+    val text = remember { mutableStateOf(format(externalValue)) }
+    val lastPushed = remember { mutableStateOf(externalValue) }
+    LaunchedEffect(externalValue) {
+        if (externalValue != lastPushed.value) {
+            text.value = format(externalValue)
+            lastPushed.value = externalValue
+        }
+    }
+    return text to lastPushed
+}
+
+/** Float variant of [rememberEchoAwareText], for the savings-goal slider. */
+@Composable
+private fun rememberEchoAwareFloat(externalValue: Float): Pair<androidx.compose.runtime.MutableState<Float>, androidx.compose.runtime.MutableState<Float>> {
+    val value = remember { mutableStateOf(externalValue) }
+    val lastPushed = remember { mutableStateOf(externalValue) }
+    LaunchedEffect(externalValue) {
+        if (externalValue != lastPushed.value) {
+            value.value = externalValue
+            lastPushed.value = externalValue
+        }
+    }
+    return value to lastPushed
+}
+
 @Composable
 private fun SalaryAndSavingsCard(
     monthlySalary: Double,
@@ -222,26 +273,35 @@ private fun SalaryAndSavingsCard(
     onSalaryChange: (Double) -> Unit,
     onSavingsPercentChange: (Float) -> Unit
 ) {
+    val (salaryTextState, lastPushedSalary) = rememberEchoAwareText(monthlySalary) {
+        if (it == 0.0) "" else formatPlainAmount(it)
+    }
+    var salaryText by salaryTextState
+
+    val (sliderValueState, lastPushedPercent) = rememberEchoAwareFloat(savingsGoalPercent)
+    var sliderValue by sliderValueState
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, BudgetTheme.colors.hairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Monthly salary", style = MaterialTheme.typography.labelLarge)
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
-                value = if (monthlySalary == 0.0) "" else formatPlainAmount(monthlySalary),
+                value = salaryText,
                 onValueChange = { text ->
+                    salaryText = text
                     val parsed = text.toDoubleOrNull()
-                    if (text.isBlank()) {
-                        onSalaryChange(0.0)
-                    } else if (parsed != null) {
+                    val newValue = if (text.isBlank()) 0.0 else parsed?.let { BudgetCalculations.clampSalary(it) }
+                    if (newValue != null) {
                         // Reject negative input at the input-handling layer (not just visually):
                         // clampSalary floors at 0, and the ViewModel/repository re-clamps again.
-                        onSalaryChange(BudgetCalculations.clampSalary(parsed))
+                        lastPushedSalary.value = newValue
+                        onSalaryChange(newValue)
                     }
                 },
                 leadingIcon = { Text("₹", style = MonospaceNumberStyle) },
@@ -258,13 +318,19 @@ private fun SalaryAndSavingsCard(
             ) {
                 Text("Savings goal", style = MaterialTheme.typography.labelLarge)
                 Text(
-                    text = CurrencyFormat.formatPercent(savingsGoalPercent),
+                    text = CurrencyFormat.formatPercent(sliderValue),
                     style = MonospaceNumberStyle.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
             Slider(
-                value = savingsGoalPercent,
-                onValueChange = { onSavingsPercentChange(BudgetCalculations.clampSavingsPercent(it)) },
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = {
+                    val clamped = BudgetCalculations.clampSavingsPercent(sliderValue)
+                    sliderValue = clamped
+                    lastPushedPercent.value = clamped
+                    onSavingsPercentChange(clamped)
+                },
                 valueRange = 0f..60f
             )
         }
@@ -281,26 +347,32 @@ private fun WeeklyAllotmentCard(
     weeklyAllotment: Double,
     onWeeklyAllotmentChange: (Double) -> Unit
 ) {
+    val (allotmentTextState, lastPushedAllotment) = rememberEchoAwareText(weeklyAllotment) {
+        if (it == 0.0) "" else formatPlainAmount(it)
+    }
+    var allotmentText by allotmentTextState
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, BudgetTheme.colors.hairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Weekly allotment", style = MaterialTheme.typography.labelLarge)
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
-                value = if (weeklyAllotment == 0.0) "" else formatPlainAmount(weeklyAllotment),
+                value = allotmentText,
                 onValueChange = { text ->
+                    allotmentText = text
                     val parsed = text.toDoubleOrNull()
-                    if (text.isBlank()) {
-                        onWeeklyAllotmentChange(0.0)
-                    } else if (parsed != null) {
+                    val newValue = if (text.isBlank()) 0.0 else parsed?.let { BudgetCalculations.clampWeeklyAllotment(it) }
+                    if (newValue != null) {
                         // Reject negative input at the input-handling layer (not just visually):
                         // clampWeeklyAllotment floors at 0, and the ViewModel/repository re-clamps again.
-                        onWeeklyAllotmentChange(BudgetCalculations.clampWeeklyAllotment(parsed))
+                        lastPushedAllotment.value = newValue
+                        onWeeklyAllotmentChange(newValue)
                     }
                 },
                 leadingIcon = { Text("₹", style = MonospaceNumberStyle) },
@@ -320,7 +392,7 @@ private fun FooterBanner(leftToAllocate: Double, periodLabel: String) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = bg),
         border = BorderStroke(1.dp, BudgetTheme.colors.hairline),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

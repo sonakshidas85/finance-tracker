@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Simple flat background for the adaptive launcher icon: warm off-white app background. -->
+<!-- Adaptive launcher icon background: Coin yellow (#FFC83A), the exact fill the brand
+     guidelines specify for Bean's "Primary icon" tile. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#FAF9F6" />
+    <solid android:color="#FFC83A" />
 </shape>

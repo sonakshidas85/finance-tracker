@@ -35,7 +35,7 @@ fun FragmentActivity.showBiometricGate(onSuccess: () -> Unit, onFailure: () -> U
     }
     val prompt = BiometricPrompt(this, executor, callback)
     val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Unlock Budget Tracker")
+        .setTitle("Unlock gremlin")
         .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
         .build()
     prompt.authenticate(promptInfo)
