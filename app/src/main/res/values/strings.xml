@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Budget Tracker</string>
-    <string name="weekly_widget_label">Budget Tracker: Weekly</string>
-    <string name="monthly_widget_label">Budget Tracker: Monthly</string>
-    <string name="weekly_widget_description">Shows this week\'s remaining spending pool and top categories.</string>
-    <string name="monthly_widget_description">Shows this month\'s remaining spending pool and top categories.</string>
-</resources>
